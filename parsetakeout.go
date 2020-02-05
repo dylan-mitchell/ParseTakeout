@@ -7,27 +7,41 @@ import (
 	"io"
 	"io/ioutil"
 	"strings"
+	"time"
 
+	"github.com/araddon/dateparse"
 	"golang.org/x/net/html"
 )
 
 type Result struct {
-	Title  string `json:"title"`
-	Action string `json:"action"`
-	Item   string `json:"item"`
-	Date   string `json:"date"`
+	Title   string `json:"title"`
+	Action  string `json:"action"`
+	Item    string `json:"item"`
+	Channel string `json:"channel"`
+	Date    string `json:"date"`
 }
 
 var actions = []string{"Listened to", "Searched for", "Visited", "Used", "Viewed", "Watched"}
 
 func (r Result) String() string {
-	s := fmt.Sprintf(`*****
-Title: %s
-Action: %s
-Item: %s
-Date: %s
-*****`, r.Title, r.Action, r.Item, r.Date)
-	return s
+	if len(r.Channel) == 0 {
+		s := fmt.Sprintf(`*****
+	Title: %s
+	Action: %s
+	Item: %s
+	Date: %s
+	*****`, r.Title, r.Action, r.Item, r.Date)
+		return s
+	} else {
+		s := fmt.Sprintf(`*****
+	Title: %s
+	Action: %s
+	Item: %s
+	Channel: %s
+	Date: %s
+	*****`, r.Title, r.Action, r.Item, r.Channel, r.Date)
+		return s
+	}
 }
 
 func ReadHtml(filePath string) (string, error) {
@@ -82,7 +96,8 @@ func ParseHTML(filePath string) ([]Result, error) {
 	z := html.NewTokenizer(strings.NewReader(body))
 
 	var res Result
-	count := 0
+	nextItem := "title"
+	getChannel := false
 
 	for {
 		tt := z.Next()
@@ -94,13 +109,17 @@ func ParseHTML(filePath string) ([]Result, error) {
 			t := z.Token()
 			// TODO: I think this can probably be transitioned to some kind of middleware-esque flow
 			//This is 🤮
-			switch count {
-			case 0:
+			switch nextItem {
+			case "title":
 				res.Title = t.Data
-				count++
-			case 1:
+				nextItem = "action"
+			case "action":
 				exactMatch := false
 				data := strings.TrimSpace(t.Data)
+				//Check if action == Watched
+				if data == "Watched" {
+					getChannel = true
+				}
 				for _, action := range actions {
 					if data == action {
 						//If exact match then next node is item
@@ -115,37 +134,55 @@ func ParseHTML(filePath string) ([]Result, error) {
 					}
 				}
 				if exactMatch {
-					count++
+					nextItem = "item"
 				} else {
-					count = 3
+					nextItem = "date"
 				}
-			case 2:
+			case "item":
 				res.Item = t.Data
-				count++
-			case 3:
-				res.Date = t.Data
+				if getChannel {
+					nextItem = "channel"
+					getChannel = false
+				} else {
+					nextItem = "date"
+				}
+			case "channel":
+				res.Channel = t.Data
+				nextItem = "date"
+			case "date":
+				layout, err := dateparse.ParseFormat(t.Data)
+				if err != nil {
+					res.Date = ""
+				}
+				t, err := time.Parse(layout, t.Data)
+				if err != nil {
+					res.Date = ""
+				} else {
+					res.Date = fmt.Sprintf("%02d-%02d-%02dT%02d:%02d:%02d", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
+				}
+
 				results = append(results, res)
 				// Clear results
 				res.Title = ""
 				res.Action = ""
 				res.Item = ""
 				res.Date = ""
-				count++
+				nextItem = "unknown"
 			}
 
 		case tt == html.StartTagToken:
-			if count == 4 {
+			if nextItem == "unknown" {
 				//Check for new item denoted by class="mdl-typography--title"
 				_, val, more := z.TagAttr()
 				if string(val) == "mdl-typography--title" {
 					// Next item will be title
-					count = 0
+					nextItem = "title"
 				}
 				for more {
 					_, val, more = z.TagAttr()
 					if string(val) == "mdl-typography--title" {
 						// Next item will be title
-						count = 0
+						nextItem = "title"
 					}
 				}
 			}
