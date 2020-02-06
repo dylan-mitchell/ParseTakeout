@@ -10,39 +10,12 @@ import (
 	"time"
 
 	"github.com/araddon/dateparse"
+	"github.com/dylan-mitchell/ParseTakeout/models"
+	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/net/html"
 )
 
-type Result struct {
-	Title   string `json:"title"`
-	Action  string `json:"action"`
-	Item    string `json:"item"`
-	Channel string `json:"channel"`
-	Date    string `json:"date"`
-}
-
-var actions = []string{"Listened to", "Searched for", "Visited", "Used", "Viewed", "Watched"}
-
-func (r Result) String() string {
-	if len(r.Channel) == 0 {
-		s := fmt.Sprintf(`*****
-	Title: %s
-	Action: %s
-	Item: %s
-	Date: %s
-	*****`, r.Title, r.Action, r.Item, r.Date)
-		return s
-	} else {
-		s := fmt.Sprintf(`*****
-	Title: %s
-	Action: %s
-	Item: %s
-	Channel: %s
-	Date: %s
-	*****`, r.Title, r.Action, r.Item, r.Channel, r.Date)
-		return s
-	}
-}
+var actions = []string{"Listened to", "Searched for", "Visited", "Used", "Viewed", "Watched", "Dismissed notification about", "Received notification about", "Saw articles in", "Saw videos in", "Read", "Watched a video in", "Said"}
 
 func ReadHtml(filePath string) (string, error) {
 	bytes, err := ioutil.ReadFile(filePath)
@@ -78,8 +51,8 @@ func renderNode(n *html.Node) string {
 	return buf.String()
 }
 
-func ParseHTML(filePath string) ([]Result, error) {
-	results := []Result{}
+func ParseHTML(filePath string) ([]models.Result, error) {
+	results := []models.Result{}
 
 	s, err := ReadHtml(filePath)
 	if err != nil {
@@ -95,7 +68,7 @@ func ParseHTML(filePath string) ([]Result, error) {
 
 	z := html.NewTokenizer(strings.NewReader(body))
 
-	var res Result
+	var res models.Result
 	nextItem := "title"
 	getChannel := false
 
@@ -117,7 +90,7 @@ func ParseHTML(filePath string) ([]Result, error) {
 				exactMatch := false
 				data := strings.TrimSpace(t.Data)
 				//Check if action == Watched
-				if data == "Watched" {
+				if data == "Watched" && res.Title != "Google News" {
 					getChannel = true
 				}
 				for _, action := range actions {
@@ -159,6 +132,7 @@ func ParseHTML(filePath string) ([]Result, error) {
 					res.Date = ""
 				} else {
 					res.Date = fmt.Sprintf("%02d-%02d-%02dT%02d:%02d:%02d", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
+					res.UnixTime = t.Unix()
 				}
 
 				results = append(results, res)
@@ -167,6 +141,7 @@ func ParseHTML(filePath string) ([]Result, error) {
 				res.Action = ""
 				res.Item = ""
 				res.Date = ""
+				res.UnixTime = 0
 				nextItem = "unknown"
 			}
 

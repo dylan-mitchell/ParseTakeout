@@ -1,21 +1,25 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/dylan-mitchell/ParseTakeout"
+	"github.com/dylan-mitchell/ParseTakeout/models"
 )
 
 func main() {
 	html := flag.String("html", "", "Path to HTML from Google Takeout Data to parse")
+	dbPath := flag.String("db", "", "Path to SQLITE3 DB")
 	flag.Parse()
 
 	if len(*html) == 0 {
 		log.Fatal("Please specify a html file to parse")
+	}
+
+	if len(*dbPath) == 0 {
+		log.Fatal("Please specify a db file")
 	}
 
 	results, err := ParseTakeout.ParseHTML(*html)
@@ -23,23 +27,21 @@ func main() {
 		log.Fatal(err)
 	}
 
-	resultsJson, err := json.Marshal(results)
+	db, err := models.OpenDB(*dbPath)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	filePath := "test.json"
-
-	f, err := os.Create(filePath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-
-	f.WriteString(string(resultsJson))
 
 	//Do something with the results
 	for _, result := range results {
-		fmt.Println(result)
+		err := result.Validate()
+		if err == nil {
+			err := models.InsertItem(db, result)
+			if err != nil {
+				fmt.Println(result)
+				fmt.Println(err)
+			}
+		}
+
 	}
 }
