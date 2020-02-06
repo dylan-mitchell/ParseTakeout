@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/araddon/dateparse"
-	"github.com/dylan-mitchell/ParseTakeout/models"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/net/html"
 )
@@ -51,8 +50,8 @@ func renderNode(n *html.Node) string {
 	return buf.String()
 }
 
-func ParseHTML(filePath string) ([]models.Result, error) {
-	results := []models.Result{}
+func ParseHTML(filePath string) ([]Result, error) {
+	results := []Result{}
 
 	s, err := ReadHtml(filePath)
 	if err != nil {
@@ -68,7 +67,7 @@ func ParseHTML(filePath string) ([]models.Result, error) {
 
 	z := html.NewTokenizer(strings.NewReader(body))
 
-	var res models.Result
+	var res Result
 	nextItem := "title"
 	getChannel := false
 
