@@ -1,7 +1,6 @@
 package ParseTakeout
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -16,12 +15,12 @@ func TestReadHTML(t *testing.T) {
 }
 
 func TestParseHTML(t *testing.T) {
-	results, err := ParseHTML(testHome + "My-Activity-Developers.html")
+	_, err := ParseHTML(testHome + "My-Activity-Developers.html")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	for _, result := range results {
-		fmt.Println(result)
-	}
+	// for _, result := range results {
+	// 	fmt.Println(result)
+	// }
 }

@@ -209,3 +209,34 @@ func GetItemsFromYear(db *sql.DB, year int) ([]Result, error) {
 
 	return results, nil
 }
+
+func GetYears(db *sql.DB) ([]int, error) {
+	rows, err := db.Query(`
+	SELECT MIN("unixtime"), MAX("unixtime") FROM "items";
+	`)
+	if err != nil {
+		return nil, err
+	}
+	var min, max int64
+
+	for rows.Next() {
+		if err := rows.Scan(&min, &max); err != nil {
+			return nil, err
+		}
+
+	}
+	// Check for errors from iterating over rows.
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	begin := time.Unix(min, 0).Year()
+	end := time.Unix(max, 0).Year()
+	years := []int{}
+
+	for i := begin; i <= end; i++ {
+		years = append(years, i)
+	}
+
+	return years, nil
+}

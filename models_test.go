@@ -70,38 +70,31 @@ func TestGetAllItemsFromYear(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	results, err := GetAllItemsFromYear(db, 2015)
+	years, err := GetYears(db)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	fmt.Println(fmt.Sprintf("2015: %d", len(results)))
+	for _, year := range years {
+		results, err := GetAllItemsFromYear(db, year)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	results, err = GetAllItemsFromYear(db, 2016)
+		fmt.Println(fmt.Sprintf("%d: %d", year, len(results)))
+	}
+}
+
+func TestGetYears(t *testing.T) {
+	db, err := OpenDB(testHome + "takeout.db")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	fmt.Println(fmt.Sprintf("2016: %d", len(results)))
-
-	results, err = GetAllItemsFromYear(db, 2017)
+	years, err := GetYears(db)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	fmt.Println(fmt.Sprintf("2017: %d", len(results)))
-
-	results, err = GetAllItemsFromYear(db, 2018)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	fmt.Println(fmt.Sprintf("2018: %d", len(results)))
-
-	results, err = GetAllItemsFromYear(db, 2019)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	fmt.Println(fmt.Sprintf("2019: %d", len(results)))
+	fmt.Println(years)
 }
