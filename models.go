@@ -172,7 +172,7 @@ func calculateUnixRangeOfYear(year int) (int64, int64) {
 	return begin, end
 }
 
-func GetAllItemsFromYear(db *sql.DB, year int) ([]Result, error) {
+func GetItemsFromYear(db *sql.DB, year int) ([]Result, error) {
 	begin, end := calculateUnixRangeOfYear(year)
 
 	rows, err := db.Query(fmt.Sprintf(`
@@ -191,9 +191,7 @@ func GetAllItemsFromYear(db *sql.DB, year int) ([]Result, error) {
 	return results, nil
 }
 
-func GetItemsFromYear(db *sql.DB, year int) ([]Result, error) {
-	begin, end := calculateUnixRangeOfYear(year)
-
+func GetItemsFromUnixtime(db *sql.DB, begin, end int64) ([]Result, error) {
 	rows, err := db.Query(fmt.Sprintf(`
 	SELECT * FROM "items"
 	WHERE "unixtime" > %d AND "unixtime" < %d;
@@ -239,4 +237,21 @@ func GetYears(db *sql.DB) ([]int, error) {
 	}
 
 	return years, nil
+}
+
+func SearchItems(db *sql.DB, searchString string) ([]Result, error) {
+	rows, err := db.Query(`
+	SELECT * FROM "items"
+	WHERE "item" LIKE '%` + searchString + `%' ORDER BY "unixtime" ASC;
+	`)
+	if err != nil {
+		return nil, err
+	}
+
+	results, err := parseRows(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
 }
