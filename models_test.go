@@ -118,7 +118,7 @@ func TestGetYears(t *testing.T) {
 }
 
 func TestSearchItems(t *testing.T) {
-	searchString := "google"
+	searchString := "forestgiant"
 	db, err := OpenDB(testHome + "takeout.db")
 	if err != nil {
 		t.Fatal(err)
@@ -128,6 +128,8 @@ func TestSearchItems(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	fmt.Println(results)
 
 	fmt.Println(fmt.Sprintf("Search for '%s' returned %d results", searchString, len(results)))
 }
