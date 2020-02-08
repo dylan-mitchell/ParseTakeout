@@ -127,11 +127,11 @@ func parseRows(rows *sql.Rows) ([]Result, error) {
 		if err := rows.Scan(&title, &action, &item, &channel, &date, &unixtime); err != nil {
 			return nil, err
 		}
-		// title, _ = url.QueryUnescape(title)
-		// action, _ = url.QueryUnescape(action)
-		// item, _ = url.QueryUnescape(item)
-		// channel, _ = url.QueryUnescape(channel)
-		// date, _ = url.QueryUnescape(date)
+		title, _ = url.QueryUnescape(title)
+		action, _ = url.QueryUnescape(action)
+		item, _ = url.QueryUnescape(item)
+		channel, _ = url.QueryUnescape(channel)
+		date, _ = url.QueryUnescape(date)
 
 		results = append(results, Result{
 			Title:    title,
