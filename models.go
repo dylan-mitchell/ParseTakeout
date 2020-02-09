@@ -362,7 +362,7 @@ func getMostCommonChannelForYear(db *sql.DB, year int) ([]ChannelFreq, error) {
 	freqs, err := db.Query(fmt.Sprintf(`
 	SELECT "channel", COUNT(*) AS FREQ
 	FROM "items"
-	WHERE "unixtime" > %d AND "unixtime" < %d
+	WHERE "unixtime" > %d AND "unixtime" < %d AND "channel" != ""
 	GROUP BY "channel"
 	ORDER BY COUNT(*) DESC
 	LIMIT 10;
