@@ -20,6 +20,31 @@ type Result struct {
 	UnixTime int64  `json:"unixtime"`
 }
 
+type YearlySummary struct {
+	MostCommon    []ItemFreq     `json:"mostcommon"`
+	YoutubeTotal  int            `json:"youtubetotal"`
+	ChannelCommon []ChannelFreq  `json:"channelcommon"`
+	Total         int            `json:"total"`
+	Monthly       []MonthSummary `json:"monthly"`
+}
+
+type MonthSummary struct {
+	Name  string `json:"name"`
+	Begin int64  `json:"begin"`
+	End   int64  `json:"end"`
+	Total int    `json:"total"`
+}
+
+type ItemFreq struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
+}
+
+type ChannelFreq struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
+}
+
 func (r Result) String() string {
 	if len(r.Channel) == 0 {
 		s := fmt.Sprintf(`*****
@@ -209,6 +234,229 @@ func GetItemsFromUnixtime(db *sql.DB, begin, end int64) ([]Result, error) {
 	}
 
 	return results, nil
+}
+
+func constructMonthlySummary(db *sql.DB, year int) ([]MonthSummary, error) {
+	months := []string{
+		"January",
+		"February",
+		"March",
+		"April",
+		"May",
+		"June",
+		"July",
+		"August",
+		"September",
+		"October",
+		"November",
+		"December",
+	}
+
+	var mSum []MonthSummary
+
+	var monthCount time.Month = 1
+	for _, month := range months {
+		begin := time.Date(year, monthCount, 1, 0, 0, 0, 0, time.UTC).Unix()
+		end := time.Date(year, monthCount+1, 0, 23, 59, 59, 999999999, time.UTC).Unix()
+
+		sum, err := db.Query(fmt.Sprintf(`
+		SELECT COUNT(*) FROM "items"
+		WHERE "unixtime" > %d AND "unixtime" < %d;
+		`, begin, end))
+		if err != nil {
+			return nil, err
+		}
+		defer sum.Close()
+
+		var sumCount int
+		for sum.Next() {
+			if err := sum.Scan(&sumCount); err != nil {
+				return nil, err
+			}
+		}
+		// Check for errors from iterating over rows.
+		if err := sum.Err(); err != nil {
+			return nil, err
+		}
+
+		mSum = append(mSum, MonthSummary{
+			Name:  month,
+			Begin: begin,
+			End:   end,
+			Total: sumCount,
+		})
+
+		monthCount++
+	}
+
+	return mSum, nil
+}
+
+func getMostCommonForYear(db *sql.DB, year int) ([]ItemFreq, error) {
+	begin, end := calculateUnixRangeOfYear(year)
+
+	freqs, err := db.Query(fmt.Sprintf(`
+	SELECT "item", COUNT(*) AS FREQ
+	FROM "items"
+	WHERE "unixtime" > %d AND "unixtime" < %d
+	GROUP BY "item"
+	ORDER BY COUNT(*) DESC
+	LIMIT 10;
+	`, begin, end))
+	if err != nil {
+		return nil, err
+	}
+	defer freqs.Close()
+
+	var itemFreqs []ItemFreq
+	for freqs.Next() {
+		var freqTotal int
+		var item string
+		if err := freqs.Scan(&item, &freqTotal); err != nil {
+			return nil, err
+		}
+		item, _ = url.QueryUnescape(item)
+		itemFreqs = append(itemFreqs, ItemFreq{
+			Name:  item,
+			Count: freqTotal,
+		})
+	}
+	// Check for errors from iterating over rows.
+	if err := freqs.Err(); err != nil {
+		return nil, err
+	}
+
+	return itemFreqs, nil
+}
+
+func getCountForYear(db *sql.DB, year int) (int, error) {
+	begin, end := calculateUnixRangeOfYear(year)
+
+	count, err := db.Query(fmt.Sprintf(`
+	SELECT COUNT(*)
+	FROM "items"
+	WHERE "unixtime" > %d AND "unixtime" < %d;
+	`, begin, end))
+	if err != nil {
+		return 0, err
+	}
+	defer count.Close()
+
+	var sum int
+	for count.Next() {
+		if err := count.Scan(&sum); err != nil {
+			return 0, err
+		}
+	}
+	// Check for errors from iterating over rows.
+	if err := count.Err(); err != nil {
+		return 0, err
+	}
+
+	return sum, nil
+}
+
+func getMostCommonChannelForYear(db *sql.DB, year int) ([]ChannelFreq, error) {
+	begin, end := calculateUnixRangeOfYear(year)
+
+	freqs, err := db.Query(fmt.Sprintf(`
+	SELECT "channel", COUNT(*) AS FREQ
+	FROM "items"
+	WHERE "unixtime" > %d AND "unixtime" < %d
+	GROUP BY "channel"
+	ORDER BY COUNT(*) DESC
+	LIMIT 10;
+	`, begin, end))
+	if err != nil {
+		return nil, err
+	}
+	defer freqs.Close()
+
+	var channelFreqs []ChannelFreq
+	for freqs.Next() {
+		var freqTotal int
+		var channel string
+		if err := freqs.Scan(&channel, &freqTotal); err != nil {
+			return nil, err
+		}
+		channel, _ = url.QueryUnescape(channel)
+		channelFreqs = append(channelFreqs, ChannelFreq{
+			Name:  channel,
+			Count: freqTotal,
+		})
+	}
+	// Check for errors from iterating over rows.
+	if err := freqs.Err(); err != nil {
+		return nil, err
+	}
+
+	return channelFreqs, nil
+}
+
+func getYoutubeForYear(db *sql.DB, year int) (int, error) {
+	begin, end := calculateUnixRangeOfYear(year)
+
+	count, err := db.Query(fmt.Sprintf(`
+	SELECT COUNT(*)
+	FROM "items"
+	WHERE "unixtime" > %d AND "unixtime" < %d AND "channel" != "";
+	`, begin, end))
+	if err != nil {
+		return 0, err
+	}
+	defer count.Close()
+
+	var sum int
+	for count.Next() {
+		if err := count.Scan(&sum); err != nil {
+			return 0, err
+		}
+	}
+	// Check for errors from iterating over rows.
+	if err := count.Err(); err != nil {
+		return 0, err
+	}
+
+	return sum, nil
+}
+
+func GetSummaryofYear(db *sql.DB, year int) (*YearlySummary, error) {
+
+	monthly, err := constructMonthlySummary(db, year)
+	if err != nil {
+		return nil, err
+	}
+	common, err := getMostCommonForYear(db, year)
+	if err != nil {
+		return nil, err
+	}
+	channelCommon, err := getMostCommonChannelForYear(db, year)
+	if err != nil {
+		return nil, err
+	}
+	total, err := getCountForYear(db, year)
+	if err != nil {
+		return nil, err
+	}
+	youtubeTotal, err := getYoutubeForYear(db, year)
+	if err != nil {
+		return nil, err
+	}
+	// MostCommon    []ItemFreq     `json:"mostcommon"`
+	// YoutubeTotal  int            `json:"youtubetotal"`
+	// ChannelCommon []ChannelFreq  `json:"channelcommon"`
+	// Total         int            `json:"total"`
+	// Monthly       []MonthSummary `json:"monthly"`
+
+	yearlySum := YearlySummary{
+		Monthly:       monthly,
+		MostCommon:    common,
+		ChannelCommon: channelCommon,
+		Total:         total,
+		YoutubeTotal:  youtubeTotal,
+	}
+
+	return &yearlySum, nil
 }
 
 func GetYears(db *sql.DB) ([]int, error) {

@@ -133,3 +133,87 @@ func TestSearchItems(t *testing.T) {
 
 	fmt.Println(fmt.Sprintf("Search for '%s' returned %d results", searchString, len(results)))
 }
+
+func TestConstructMonthlySummary(t *testing.T) {
+	db, err := OpenDB(testHome + "takeout.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	monSum, err := constructMonthlySummary(db, 2017)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println(monSum)
+}
+
+func TestGetMostCommonForYear(t *testing.T) {
+	db, err := OpenDB(testHome + "takeout.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	common, err := getMostCommonForYear(db, 2017)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println(common)
+}
+
+func TestGetYoutubeForYear(t *testing.T) {
+	db, err := OpenDB(testHome + "takeout.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	count, err := getYoutubeForYear(db, 2017)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println(fmt.Sprintf("Youtube: %d", count))
+}
+
+func TestGetMostCommonChannelForYear(t *testing.T) {
+	db, err := OpenDB(testHome + "takeout.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	common, err := getMostCommonChannelForYear(db, 2017)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println(common)
+}
+
+func TestGetCountForYear(t *testing.T) {
+	db, err := OpenDB(testHome + "takeout.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	count, err := getCountForYear(db, 2017)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println(count)
+}
+
+func TestGetSummaryofYear(t *testing.T) {
+	db, err := OpenDB(testHome + "takeout.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	summary, err := GetSummaryofYear(db, 2017)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println(summary)
+}
