@@ -53,6 +53,9 @@ func (r Result) Validate() error {
 	if r.Item == "" {
 		return errors.New("Empty item")
 	}
+	if len(r.Item) > 250 {
+		return errors.New("Item too long")
+	}
 	if r.UnixTime == 0 {
 		return errors.New("Invalid unix time")
 	}
