@@ -29,6 +29,7 @@ type TotalSummary struct {
 }
 
 type YearlySummary struct {
+	Year          int            `json:"year"`
 	MostCommon    []ItemFreq     `json:"mostcommon"`
 	YoutubeTotal  int            `json:"youtubetotal"`
 	ChannelCommon []ChannelFreq  `json:"channelcommon"`
@@ -452,6 +453,7 @@ func GetSummaryofYear(db *sql.DB, year int) (*YearlySummary, error) {
 	}
 
 	yearlySum := YearlySummary{
+		Year:          year,
 		Monthly:       monthly,
 		MostCommon:    common,
 		ChannelCommon: channelCommon,
