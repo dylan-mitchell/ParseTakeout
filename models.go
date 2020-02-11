@@ -20,6 +20,14 @@ type Result struct {
 	UnixTime int64  `json:"unixtime"`
 }
 
+type TotalSummary struct {
+	MostCommon    []ItemFreq      `json:"mostcommon"`
+	YoutubeTotal  int             `json:"youtubetotal"`
+	ChannelCommon []ChannelFreq   `json:"channelcommon"`
+	Total         int             `json:"total"`
+	Yearly        []YearlySummary `json:"yearly"`
+}
+
 type YearlySummary struct {
 	MostCommon    []ItemFreq     `json:"mostcommon"`
 	YoutubeTotal  int            `json:"youtubetotal"`
@@ -442,11 +450,6 @@ func GetSummaryofYear(db *sql.DB, year int) (*YearlySummary, error) {
 	if err != nil {
 		return nil, err
 	}
-	// MostCommon    []ItemFreq     `json:"mostcommon"`
-	// YoutubeTotal  int            `json:"youtubetotal"`
-	// ChannelCommon []ChannelFreq  `json:"channelcommon"`
-	// Total         int            `json:"total"`
-	// Monthly       []MonthSummary `json:"monthly"`
 
 	yearlySum := YearlySummary{
 		Monthly:       monthly,
@@ -457,6 +460,181 @@ func GetSummaryofYear(db *sql.DB, year int) (*YearlySummary, error) {
 	}
 
 	return &yearlySum, nil
+}
+
+func getMostCommonItem(db *sql.DB) ([]ItemFreq, error) {
+	freqs, err := db.Query(`
+	SELECT "item", COUNT(*) AS FREQ
+	FROM "items"
+	GROUP BY "item"
+	ORDER BY COUNT(*) DESC
+	LIMIT 10;
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer freqs.Close()
+
+	var itemFreqs []ItemFreq
+	for freqs.Next() {
+		var freqTotal int
+		var item string
+		if err := freqs.Scan(&item, &freqTotal); err != nil {
+			return nil, err
+		}
+		item, _ = url.QueryUnescape(item)
+		itemFreqs = append(itemFreqs, ItemFreq{
+			Name:  item,
+			Count: freqTotal,
+		})
+	}
+	// Check for errors from iterating over rows.
+	if err := freqs.Err(); err != nil {
+		return nil, err
+	}
+
+	return itemFreqs, nil
+}
+
+func getCountTotal(db *sql.DB) (int, error) {
+
+	count, err := db.Query(`
+	SELECT COUNT(*)
+	FROM "items";
+	`)
+	if err != nil {
+		return 0, err
+	}
+	defer count.Close()
+
+	var sum int
+	for count.Next() {
+		if err := count.Scan(&sum); err != nil {
+			return 0, err
+		}
+	}
+	// Check for errors from iterating over rows.
+	if err := count.Err(); err != nil {
+		return 0, err
+	}
+
+	return sum, nil
+}
+
+func getYoutubeTotal(db *sql.DB) (int, error) {
+
+	count, err := db.Query(`
+	SELECT COUNT(*)
+	FROM "items"
+	WHERE "channel" != "";
+	`)
+	if err != nil {
+		return 0, err
+	}
+	defer count.Close()
+
+	var sum int
+	for count.Next() {
+		if err := count.Scan(&sum); err != nil {
+			return 0, err
+		}
+	}
+	// Check for errors from iterating over rows.
+	if err := count.Err(); err != nil {
+		return 0, err
+	}
+
+	return sum, nil
+}
+
+func getMostCommonChannel(db *sql.DB) ([]ChannelFreq, error) {
+	freqs, err := db.Query(`
+	SELECT "channel", COUNT(*) AS FREQ
+	FROM "items"
+	WHERE "channel" != ""
+	GROUP BY "channel"
+	ORDER BY COUNT(*) DESC
+	LIMIT 10;
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer freqs.Close()
+
+	var channelFreqs []ChannelFreq
+	for freqs.Next() {
+		var freqTotal int
+		var channel string
+		if err := freqs.Scan(&channel, &freqTotal); err != nil {
+			return nil, err
+		}
+		channel, _ = url.QueryUnescape(channel)
+		channelFreqs = append(channelFreqs, ChannelFreq{
+			Name:  channel,
+			Count: freqTotal,
+		})
+	}
+	// Check for errors from iterating over rows.
+	if err := freqs.Err(); err != nil {
+		return nil, err
+	}
+
+	return channelFreqs, nil
+}
+
+// type TotalSummary struct {
+// 	MostCommon    []ItemFreq      `json:"mostcommon"`
+// 	YoutubeTotal  int             `json:"youtubetotal"`
+// 	ChannelCommon []ChannelFreq   `json:"channelcommon"`
+// 	Total         int             `json:"total"`
+// 	Yearly        []YearlySummary `json:"yearly"`
+// }
+
+func GetTotalSummary(db *sql.DB) (*TotalSummary, error) {
+
+	years, err := GetYears(db)
+	if err != nil {
+		return nil, err
+	}
+
+	var yearSums []YearlySummary
+	for _, year := range years {
+		yearSum, err := GetSummaryofYear(db, year)
+		if err != nil {
+			return nil, err
+		}
+		yearSums = append(yearSums, *yearSum)
+	}
+
+	mostCommon, err := getMostCommonItem(db)
+	if err != nil {
+		return nil, err
+	}
+
+	total, err := getCountTotal(db)
+	if err != nil {
+		return nil, err
+	}
+
+	youtubeTotal, err := getYoutubeTotal(db)
+	if err != nil {
+		return nil, err
+	}
+
+	channelCommon, err := getMostCommonChannel(db)
+	if err != nil {
+		return nil, err
+	}
+
+	totalSum := TotalSummary{
+		MostCommon:    mostCommon,
+		YoutubeTotal:  youtubeTotal,
+		ChannelCommon: channelCommon,
+		Total:         total,
+		Yearly:        yearSums,
+	}
+
+	return &totalSum, nil
 }
 
 func GetYears(db *sql.DB) ([]int, error) {

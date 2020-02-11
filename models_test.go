@@ -217,3 +217,17 @@ func TestGetSummaryofYear(t *testing.T) {
 
 	fmt.Println(summary)
 }
+
+func TestGetTotalSummary(t *testing.T) {
+	db, err := OpenDB(testHome + "takeout.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	summary, err := GetTotalSummary(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println(summary)
+}
