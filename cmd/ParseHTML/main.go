@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"github.com/dylan-mitchell/ParseTakeout"
-	"github.com/dylan-mitchell/ParseTakeout/models"
 )
 
 func main() {
@@ -27,7 +26,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	db, err := models.OpenDB(*dbPath)
+	db, err := ParseTakeout.OpenDB(*dbPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -36,7 +35,7 @@ func main() {
 	for _, result := range results {
 		err := result.Validate()
 		if err == nil {
-			err := models.InsertItem(db, result)
+			err := ParseTakeout.InsertItem(db, result)
 			if err != nil {
 				fmt.Println(result)
 				fmt.Println(err)

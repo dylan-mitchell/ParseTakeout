@@ -114,7 +114,7 @@ func OpenDB(dbPath string) (*sql.DB, error) {
 		"channel"	TEXT,
 		"date"	TEXT,
 		"unixtime"	INTEGER,
-		PRIMARY KEY("unixtime","item")
+		PRIMARY KEY("action","unixtime","item")
 	);
 	`)
 	if err != nil {
