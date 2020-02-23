@@ -125,6 +125,24 @@ func OpenDB(dbPath string) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	sqlStmt, err = db.Prepare(`
+	CREATE TABLE IF NOT EXISTS "locationhistory" (
+		"timestamp"	INTEGER,
+		"latitude"	INTEGER,
+		"longitude"	INTEGER,
+		PRIMARY KEY("timestamp")
+	);
+	`)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = sqlStmt.Exec()
+	if err != nil {
+		return nil, err
+	}
+
 	return db, nil
 }
 

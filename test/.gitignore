@@ -1,3 +1,4 @@
 *.html
 *.db
 !My-Activity-Developers.html
+*.json
