@@ -686,3 +686,23 @@ func SearchItems(db *sql.DB, searchString string) ([]Result, error) {
 
 	return results, nil
 }
+
+func BeginTransaction(db *sql.DB) error {
+	_, err := db.Exec(`
+	BEGIN TRANSACTION;
+	`)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func CommitTransaction(db *sql.DB) error {
+	_, err := db.Exec(`
+	COMMIT TRANSACTION;
+	`)
+	if err != nil {
+		return err
+	}
+	return nil
+}
