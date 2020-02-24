@@ -132,8 +132,7 @@ func OpenDB(dbPath string) (*sql.DB, error) {
 	CREATE TABLE IF NOT EXISTS "locationhistory" (
 		"unixtime"	INTEGER,
 		"latitude"	INTEGER,
-		"longitude"	INTEGER,
-		PRIMARY KEY("unixtime")
+		"longitude"	INTEGER
 	);
 	`)
 	if err != nil {

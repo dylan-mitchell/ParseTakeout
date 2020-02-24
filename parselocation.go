@@ -56,8 +56,8 @@ func FormatInput(loc LocationInput) Location {
 	t, _ := strconv.Atoi(loc.Timestamp[0 : len(loc.Timestamp)-4])
 	return Location{
 		Unixtime:  int64(t),
-		Latitude:  loc.Latitude / 10000000,
-		Longitude: loc.Longitude / 10000000,
+		Latitude:  loc.Latitude,
+		Longitude: loc.Longitude,
 	}
 }
 
