@@ -26,6 +26,7 @@ type TotalSummary struct {
 	ChannelCommon []ChannelFreq   `json:"channelcommon"`
 	Total         int             `json:"total"`
 	Yearly        []YearlySummary `json:"yearly"`
+	LocationData  []Location      `json:"locationdata"`
 }
 
 type YearlySummary struct {
@@ -35,6 +36,7 @@ type YearlySummary struct {
 	ChannelCommon []ChannelFreq  `json:"channelcommon"`
 	Total         int            `json:"total"`
 	Monthly       []MonthSummary `json:"monthly"`
+	LocationData  []Location     `json:"locationdata"`
 }
 
 type MonthSummary struct {
@@ -55,17 +57,17 @@ type ChannelFreq struct {
 }
 
 func (r Result) String() string {
+	var s string
 	if len(r.Channel) == 0 {
-		s := fmt.Sprintf(`*****
+		s = fmt.Sprintf(`*****
 	Title: %s
 	Action: %s
 	Item: %s
 	Date: %s
 	UnixTime: %d
 	*****`, r.Title, r.Action, r.Item, r.Date, r.UnixTime)
-		return s
 	} else {
-		s := fmt.Sprintf(`*****
+		s = fmt.Sprintf(`*****
 	Title: %s
 	Action: %s
 	Item: %s
@@ -73,8 +75,8 @@ func (r Result) String() string {
 	Date: %s
 	UnixTime: %d
 	*****`, r.Title, r.Action, r.Item, r.Channel, r.Date, r.UnixTime)
-		return s
 	}
+	return s
 }
 
 func (r Result) Validate() error {
@@ -447,6 +449,25 @@ func getYoutubeForYear(db *sql.DB, year int) (int, error) {
 	return sum, nil
 }
 
+func getAllLocationsForYear(db *sql.DB, year int) ([]Location, error) {
+	begin, end := calculateUnixRangeOfYear(year)
+	rows, err := db.Query(fmt.Sprintf(`
+	SELECT *
+	FROM "locationhistory"
+	WHERE "unixtime" > %d AND "unixtime" < %d;
+	`, begin, end))
+	if err != nil {
+		return nil, err
+	}
+
+	results, err := parseLocationRows(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
+
 func GetSummaryofYear(db *sql.DB, year int) (*YearlySummary, error) {
 
 	monthly, err := constructMonthlySummary(db, year)
@@ -469,6 +490,10 @@ func GetSummaryofYear(db *sql.DB, year int) (*YearlySummary, error) {
 	if err != nil {
 		return nil, err
 	}
+	locationData, err := getAllLocationsForYear(db, year)
+	if err != nil {
+		return nil, err
+	}
 
 	yearlySum := YearlySummary{
 		Year:          year,
@@ -477,6 +502,7 @@ func GetSummaryofYear(db *sql.DB, year int) (*YearlySummary, error) {
 		ChannelCommon: channelCommon,
 		Total:         total,
 		YoutubeTotal:  youtubeTotal,
+		LocationData:  locationData,
 	}
 
 	return &yearlySum, nil
@@ -646,12 +672,18 @@ func GetTotalSummary(db *sql.DB) (*TotalSummary, error) {
 		return nil, err
 	}
 
+	locationData, err := GetAllLocations(db)
+	if err != nil {
+		return nil, err
+	}
+
 	totalSum := TotalSummary{
 		MostCommon:    mostCommon,
 		YoutubeTotal:  youtubeTotal,
 		ChannelCommon: channelCommon,
 		Total:         total,
 		Yearly:        yearSums,
+		LocationData:  locationData,
 	}
 
 	return &totalSum, nil
