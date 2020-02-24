@@ -133,7 +133,7 @@ func OpenDB(dbPath string) (*sql.DB, error) {
 		"unixtime"	INTEGER,
 		"latitude"	INTEGER,
 		"longitude"	INTEGER,
-		PRIMARY KEY("timestamp")
+		PRIMARY KEY("unixtime")
 	);
 	`)
 	if err != nil {
