@@ -63,7 +63,7 @@ func FormatInput(loc LocationInput) Location {
 
 func InsertLocation(db *sql.DB, loc Location) error {
 	_, err := db.Exec(fmt.Sprintf(`
-	INSERT INTO "locationhistory" ("timestamp", "latitude", "longitude")
+	INSERT INTO "locationhistory" ("unixtime", "latitude", "longitude")
 	VALUES ("%d", "%d", "%d");
 	`, loc.Unixtime, loc.Latitude, loc.Longitude))
 	if err != nil {
