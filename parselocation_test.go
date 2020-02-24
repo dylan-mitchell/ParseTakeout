@@ -20,7 +20,7 @@ func TestInsertLocation(t *testing.T) {
 	}
 
 	loc := Location{
-		Timestamp: "1234",
+		Unixtime:  1234,
 		Latitude:  1,
 		Longitude: 2,
 	}
@@ -37,7 +37,7 @@ func TestDeleteLocation(t *testing.T) {
 	}
 
 	loc := Location{
-		Timestamp: "1234",
+		Unixtime:  1234,
 		Latitude:  1,
 		Longitude: 2,
 	}

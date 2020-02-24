@@ -15,6 +15,16 @@ type Data struct {
 }
 
 type Location struct {
+	Unixtime  int64 `json:"unixtime"`
+	Latitude  int64 `json:"latitude"`
+	Longitude int64 `json:"longitude"`
+}
+
+type DataInput struct {
+	Locations []LocationInput `json:"locations"`
+}
+
+type LocationInput struct {
 	Timestamp string `json:"timestampMs"`
 	Latitude  int64  `json:"latitudeE7"`
 	Longitude int64  `json:"longitudeE7"`
@@ -22,36 +32,40 @@ type Location struct {
 
 func (l Location) String() string {
 	s := fmt.Sprintf(`*****
-Timestamp: %s
+Unixtime: %d
 Lat: %d
 Lon: %d
-*****`, l.Timestamp, l.Latitude, l.Longitude)
+*****`, l.Unixtime, l.Latitude, l.Longitude)
 	return s
 }
 
-func LoadJSON(filePath string) (*Data, error) {
+func LoadJSON(filePath string) (*DataInput, error) {
 	bytes, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}
 
-	var data Data
+	var data DataInput
 
 	json.Unmarshal(bytes, &data)
 
 	return &data, nil
 }
 
-func InsertLocation(db *sql.DB, loc Location) error {
-	ts, err := strconv.Atoi(loc.Timestamp)
-	if err != nil {
-		return err
+func FormatInput(loc LocationInput) Location {
+	t, _ := strconv.Atoi(loc.Timestamp[0 : len(loc.Timestamp)-4])
+	return Location{
+		Unixtime:  int64(t),
+		Latitude:  loc.Latitude / 10000000,
+		Longitude: loc.Longitude / 10000000,
 	}
+}
 
-	_, err = db.Exec(fmt.Sprintf(`
+func InsertLocation(db *sql.DB, loc Location) error {
+	_, err := db.Exec(fmt.Sprintf(`
 	INSERT INTO "locationhistory" ("timestamp", "latitude", "longitude")
 	VALUES ("%d", "%d", "%d");
-	`, ts, loc.Latitude, loc.Longitude))
+	`, loc.Unixtime, loc.Latitude, loc.Longitude))
 	if err != nil {
 		return err
 	}
@@ -59,15 +73,11 @@ func InsertLocation(db *sql.DB, loc Location) error {
 }
 
 func DeleteLocation(db *sql.DB, loc Location) error {
-	ts, err := strconv.Atoi(loc.Timestamp)
-	if err != nil {
-		return err
-	}
 
-	_, err = db.Exec(fmt.Sprintf(`
+	_, err := db.Exec(fmt.Sprintf(`
 	DELETE FROM "locationhistory" WHERE
-	"timestamp" = "%d";
-	`, ts))
+	"unixtime" = "%d";
+	`, loc.Unixtime))
 	if err != nil {
 		return err
 	}
@@ -79,16 +89,14 @@ func parseLocationRows(rows *sql.Rows) ([]Location, error) {
 
 	results := []Location{}
 	for rows.Next() {
-		var ts int64
+		var t int64
 		var lat int64
 		var lon int64
-		if err := rows.Scan(&ts, &lat, &lon); err != nil {
+		if err := rows.Scan(&t, &lat, &lon); err != nil {
 			return nil, err
 		}
-
-		tsString := fmt.Sprintf("%d", ts)
 		results = append(results, Location{
-			Timestamp: tsString,
+			Unixtime:  t,
 			Latitude:  lat,
 			Longitude: lon,
 		})

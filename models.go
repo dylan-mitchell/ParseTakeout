@@ -130,7 +130,7 @@ func OpenDB(dbPath string) (*sql.DB, error) {
 
 	sqlStmt, err = db.Prepare(`
 	CREATE TABLE IF NOT EXISTS "locationhistory" (
-		"timestamp"	INTEGER,
+		"unixtime"	INTEGER,
 		"latitude"	INTEGER,
 		"longitude"	INTEGER,
 		PRIMARY KEY("timestamp")
