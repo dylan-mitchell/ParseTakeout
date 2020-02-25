@@ -53,9 +53,9 @@ func LoadJSON(filePath string) (*DataInput, error) {
 }
 
 func FormatInput(loc LocationInput) Location {
-	t, _ := strconv.Atoi(loc.Timestamp[0 : len(loc.Timestamp)-4])
+	t, _ := strconv.Atoi(loc.Timestamp)
 	return Location{
-		Unixtime:  int64(t),
+		Unixtime:  int64(t / 100),
 		Latitude:  loc.Latitude,
 		Longitude: loc.Longitude,
 	}

@@ -451,8 +451,7 @@ func getYoutubeForYear(db *sql.DB, year int) (int, error) {
 func getAllLocationsForYear(db *sql.DB, year int) ([]Location, error) {
 	begin, end := calculateUnixRangeOfYear(year)
 	rows, err := db.Query(fmt.Sprintf(`
-	SELECT *
-	FROM "locationhistory"
+	SELECT * FROM "locationhistory"
 	WHERE "unixtime" > %d AND "unixtime" < %d;
 	`, begin, end))
 	if err != nil {

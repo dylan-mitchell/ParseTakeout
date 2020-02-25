@@ -231,3 +231,17 @@ func TestGetTotalSummary(t *testing.T) {
 
 	fmt.Println(summary)
 }
+
+func TestGetAllLocationsForYear(t *testing.T) {
+	db, err := OpenDB(testHome + "takeout.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	locs, err := getAllLocationsForYear(db, 2017)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println(locs)
+}
